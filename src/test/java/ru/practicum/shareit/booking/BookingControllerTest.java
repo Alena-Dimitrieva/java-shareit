@@ -11,7 +11,10 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import ru.practicum.shareit.Exception.GlobalExceptionHandler;
 import ru.practicum.shareit.Exception.ForbiddenOperationException;
+import ru.practicum.shareit.booking.dto.BookingCreateDto;
 import ru.practicum.shareit.booking.dto.BookingDto;
+import ru.practicum.shareit.booking.dto.ItemShortDto;
+import ru.practicum.shareit.booking.dto.UserShortDto;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -26,7 +29,8 @@ class BookingControllerTest {
 
     @Mock
     private BookingService bookingService;
-    BookingController bookingController;
+
+    private BookingController bookingController;
     private MockMvc mockMvc;
     private ObjectMapper objectMapper;
     AutoCloseable closeable;
@@ -46,34 +50,51 @@ class BookingControllerTest {
     }
 
     private BookingDto validBookingDto() {
-        return new BookingDto(
-                1L,
-                LocalDateTime.now().plusDays(1),
-                LocalDateTime.now().plusDays(2),
-                1L,
-                1L,
-                "WAITING"
-        );
+        BookingDto dto = new BookingDto();
+        dto.setId(1L);
+        dto.setStart(LocalDateTime.now().plusDays(1));
+        dto.setEnd(LocalDateTime.now().plusDays(2));
+        dto.setStatus("WAITING");
+
+        ItemShortDto item = new ItemShortDto(1L, null, null, null, null);
+        item.setId(1L);
+        dto.setItem(item);
+
+        UserShortDto booker = new UserShortDto();
+        booker.setId(1L);
+        dto.setBooker(booker);
+
+        return dto;
     }
 
-    // Тесты с позитивным сценарием
+    private BookingCreateDto validCreateDto() {
+        BookingCreateDto dto = new BookingCreateDto();
+        dto.setItemId(1L);
+        dto.setStart(LocalDateTime.now().plusDays(1));
+        dto.setEnd(LocalDateTime.now().plusDays(2));
+        return dto;
+    }
+
+    // Позитивные тесты
     @Test
     void createBooking_shouldReturnCreatedBooking() throws Exception {
-        BookingDto dto = validBookingDto();
-        when(bookingService.create(any(), eq(1L))).thenReturn(dto);
+        BookingDto response = validBookingDto();
+
+        when(bookingService.create(any(), eq(1L))).thenReturn(response);
 
         mockMvc.perform(post("/bookings")
                         .header("X-Sharer-User-Id", 1L)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(dto)))
+                        .content(objectMapper.writeValueAsString(validCreateDto())))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(dto.getId()))
+                .andExpect(jsonPath("$.id").value(response.getId()))
                 .andExpect(jsonPath("$.status").value("WAITING"));
     }
 
     @Test
     void getBookingById_shouldReturnBooking() throws Exception {
         BookingDto dto = validBookingDto();
+
         when(bookingService.getById(1L, 1L)).thenReturn(dto);
 
         mockMvc.perform(get("/bookings/1")
@@ -86,10 +107,13 @@ class BookingControllerTest {
     @Test
     void getAllByUser_shouldReturnList() throws Exception {
         BookingDto dto = validBookingDto();
-        when(bookingService.getAllByUser(1L)).thenReturn(List.of(dto));
+
+        when(bookingService.getAllByUser(eq(1L), any()))
+                .thenReturn(List.of(dto));
 
         mockMvc.perform(get("/bookings")
-                        .header("X-Sharer-User-Id", 1L))
+                        .header("X-Sharer-User-Id", 1L)
+                        .param("state", "ALL"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").value(dto.getId()));
     }
@@ -97,10 +121,13 @@ class BookingControllerTest {
     @Test
     void getAllByOwner_shouldReturnList() throws Exception {
         BookingDto dto = validBookingDto();
-        when(bookingService.getAllByOwner(1L)).thenReturn(List.of(dto));
+
+        when(bookingService.getAllByOwner(eq(1L), any()))
+                .thenReturn(List.of(dto));
 
         mockMvc.perform(get("/bookings/owner")
-                        .header("X-Sharer-User-Id", 1L))
+                        .header("X-Sharer-User-Id", 1L)
+                        .param("state", "ALL"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").value(dto.getId()));
     }
@@ -109,6 +136,7 @@ class BookingControllerTest {
     void updateStatus_shouldReturnUpdatedBooking() throws Exception {
         BookingDto dto = validBookingDto();
         dto.setStatus("APPROVED");
+
         when(bookingService.updateStatus(1L, 1L, true)).thenReturn(dto);
 
         mockMvc.perform(patch("/bookings/1")
@@ -118,7 +146,7 @@ class BookingControllerTest {
                 .andExpect(jsonPath("$.status").value("APPROVED"));
     }
 
-    // Тесты с негативным сценарием
+    // Негативные тесты
     @Test
     void getBookingById_shouldReturnNotFound_whenBookingNotFound() throws Exception {
         when(bookingService.getById(999L, 1L))
@@ -132,19 +160,16 @@ class BookingControllerTest {
 
     @Test
     void createBooking_shouldReturnBadRequest_whenDatesInvalid() throws Exception {
-        BookingDto dto = validBookingDto();
-        dto.setStart(LocalDateTime.now().minusDays(1));
-        dto.setEnd(LocalDateTime.now().minusDays(2));
-
         when(bookingService.create(any(), eq(1L)))
                 .thenThrow(new IllegalArgumentException("Дата начала должна быть раньше даты окончания"));
 
         mockMvc.perform(post("/bookings")
                         .header("X-Sharer-User-Id", 1L)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(dto)))
+                        .content(objectMapper.writeValueAsString(validCreateDto())))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("Дата начала должна быть раньше даты окончания"));
+                .andExpect(jsonPath("$.error")
+                        .value("Дата начала должна быть раньше даты окончания"));
     }
 
     @Test
@@ -156,6 +181,7 @@ class BookingControllerTest {
                         .param("approved", "true")
                         .header("X-Sharer-User-Id", 999L))
                 .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.error").value("Только владелец может менять статус бронирования"));
+                .andExpect(jsonPath("$.error")
+                        .value("Только владелец может менять статус бронирования"));
     }
 }

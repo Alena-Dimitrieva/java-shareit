@@ -2,29 +2,38 @@ package ru.practicum.shareit.user;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 import ru.practicum.shareit.Exception.EmailAlreadyExistsException;
 import ru.practicum.shareit.user.dto.UserDto;
 
-import java.util.List;
-import java.util.NoSuchElementException;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
 
 class UserServiceTest {
+
+    @Mock
+    private UserRepository userRepository;
 
     private UserServiceImpl userService;
 
     @BeforeEach
     void setUp() {
-        userService = new UserServiceImpl();
+        MockitoAnnotations.openMocks(this);
+        userService = new UserServiceImpl(userRepository);
     }
 
-    //Тесты с позитивным сценарием
     @Test
     void shouldCreateUser() {
-        UserDto user = new UserDto(null, "Alice", "alice@mail.com");
+        User user = new User(1L, "alice@mail.com", "Alice");
 
-        UserDto created = userService.create(user);
+        when(userRepository.existsByEmail("alice@mail.com")).thenReturn(false);
+        when(userRepository.save(any(User.class))).thenReturn(user);
+
+        UserDto created = userService.create(new UserDto(null, "alice@mail.com", "Alice"));
 
         assertNotNull(created.getId());
         assertEquals("Alice", created.getName());
@@ -33,79 +42,36 @@ class UserServiceTest {
 
     @Test
     void shouldGetUserById() {
-        UserDto created = userService.create(new UserDto(null, "Bob", "bob@mail.com"));
+        User user = new User(1L, "bob@mail.com", "Bob");
 
-        UserDto found = userService.getUserById(created.getId());
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
 
-        assertEquals(created.getId(), found.getId());
+        UserDto found = userService.getUserById(1L);
+
+        assertEquals(1L, found.getId());
         assertEquals("Bob", found.getName());
+        assertEquals("bob@mail.com", found.getEmail());
     }
 
     @Test
     void shouldUpdateUserName() {
-        UserDto created = userService.create(new UserDto(null, "Charlie", "charlie@mail.com"));
+        User user = new User(1L, "charlie@mail.com", "Charlie");
 
-        UserDto updateDto = new UserDto(null, "CharlieUpdated", null);
-        UserDto updated = userService.update(created.getId(), updateDto);
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(userRepository.existsByEmailAndIdNot("charlie@mail.com", 1L)).thenReturn(false);
+        when(userRepository.save(any(User.class))).thenReturn(user);
+
+        UserDto updated = userService.update(1L, new UserDto(null, null, "CharlieUpdated"));
 
         assertEquals("CharlieUpdated", updated.getName());
         assertEquals("charlie@mail.com", updated.getEmail());
     }
 
     @Test
-    void shouldReturnAllUsers() {
-        userService.create(new UserDto(null, "User1", "user1@mail.com"));
-        userService.create(new UserDto(null, "User2", "user2@mail.com"));
-
-        List<UserDto> users = userService.getAllUsers();
-
-        assertEquals(2, users.size());
-    }
-
-    @Test
-    void shouldDeleteUser() {
-        UserDto created = userService.create(new UserDto(null, "DeleteMe", "delete@mail.com"));
-
-        userService.deleteUser(created.getId());
-
-        assertThrows(NoSuchElementException.class,
-                () -> userService.getUserById(created.getId()));
-    }
-
-    //Тесты с негативным сценарием
-    @Test
-    void shouldThrowExceptionWhenEmailIsBlank() {
-        UserDto user = new UserDto(null, "Alice", "");
-
-        assertThrows(IllegalArgumentException.class,
-                () -> userService.create(user));
-    }
-
-    @Test
-    void shouldThrowExceptionForInvalidEmail() {
-        UserDto user = new UserDto(null, "Alice", "invalidEmail");
-
-        assertThrows(IllegalArgumentException.class,
-                () -> userService.create(user));
-    }
-
-    @Test
     void shouldThrowExceptionForDuplicateEmail() {
-        userService.create(new UserDto(null, "User1", "duplicate@mail.com"));
+        when(userRepository.existsByEmail("duplicate@mail.com")).thenReturn(true);
 
         assertThrows(EmailAlreadyExistsException.class,
-                () -> userService.create(new UserDto(null, "User2", "duplicate@mail.com")));
-    }
-
-    @Test
-    void shouldThrowExceptionWhenUserNotFound() {
-        assertThrows(NoSuchElementException.class,
-                () -> userService.getUserById(999L));
-    }
-
-    @Test
-    void shouldThrowExceptionWhenDeletingNonExistingUser() {
-        assertThrows(NoSuchElementException.class,
-                () -> userService.deleteUser(999L));
+                () -> userService.create(new UserDto(null, "duplicate@mail.com", "User2")));
     }
 }

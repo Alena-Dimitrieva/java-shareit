@@ -1,5 +1,6 @@
 package ru.practicum.shareit.request;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import ru.practicum.shareit.request.dto.ItemRequestDto;
 
@@ -7,13 +8,10 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/requests")
+@RequiredArgsConstructor
 public class ItemRequestController {
 
     private final ItemRequestService service;
-
-    public ItemRequestController(ItemRequestService service) {
-        this.service = service;
-    }
 
     @PostMapping
     public ItemRequestDto create(@RequestHeader("X-Sharer-User-Id") Long userId,

@@ -7,6 +7,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import ru.practicum.shareit.comment.CommentService;
 import ru.practicum.shareit.item.dto.ItemDto;
 
 import java.util.List;
@@ -29,8 +30,20 @@ class ItemControllerTest {
     @MockBean
     ItemService itemService;
 
+    @MockBean
+    CommentService commentService;
+
     private final ItemDto itemDto =
-            new ItemDto(1L, "Дрель", "Мощная дрель", true, null);
+            new ItemDto(
+                    1L,
+                    "Дрель",
+                    "Мощная дрель",
+                    true,
+                    null,
+                    List.of(),
+                    null,
+                    null
+            );
 
     //Тесты с позитивным сценарием
     @Test
