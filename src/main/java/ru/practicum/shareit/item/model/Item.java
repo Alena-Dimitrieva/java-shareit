@@ -9,6 +9,7 @@ import ru.practicum.shareit.user.User;
 import java.util.List;
 
 @Entity
+@Table(name = "items")
 @Getter
 @Setter
 @NoArgsConstructor
