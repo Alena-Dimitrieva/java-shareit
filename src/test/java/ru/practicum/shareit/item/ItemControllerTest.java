@@ -40,6 +40,7 @@ class ItemControllerTest {
                     "Мощная дрель",
                     true,
                     null,
+                    1L,
                     List.of(),
                     null,
                     null

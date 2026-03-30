@@ -28,6 +28,7 @@ public class ItemMapper {
                 item.getDescription(),
                 item.getAvailable(),
                 item.getRequest() != null ? item.getRequest().getId() : null,
+                item.getOwner() != null ? item.getOwner().getId() : null,
                 comments,
                 lastBooking != null ? BookingMapper.toBookingDto(lastBooking) : null,
                 nextBooking != null ? BookingMapper.toBookingDto(nextBooking) : null
