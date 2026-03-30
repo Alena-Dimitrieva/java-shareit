@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import ru.practicum.shareit.Exception.ForbiddenOperationException;
 import ru.practicum.shareit.booking.Booking;
+import ru.practicum.shareit.booking.BookingMapper;
 import ru.practicum.shareit.booking.BookingRepository;
 import ru.practicum.shareit.booking.BookingStatus;
 import ru.practicum.shareit.booking.dto.ItemShortDto;
@@ -124,29 +125,33 @@ public class ItemServiceImpl implements ItemService {
         Booking lastBooking = null;
         Booking nextBooking = null;
 
-        if (item.getOwner().getId().equals(userId)) {
+        if (item.getOwner() != null && item.getOwner().getId().equals(userId)) {
 
             lastBooking = bookingRepository
-                    .findFirstByItemIdAndStatusAndEndBeforeOrderByEndDesc(
+                    .findFirstByItem_IdAndStatusAndEndBeforeOrderByEndDesc(
                             item.getId(),
                             BookingStatus.APPROVED,
                             LocalDateTime.now()
-                    ).orElse(null);
+                    )
+                    .orElse(null);
 
             nextBooking = bookingRepository
-                    .findFirstByItemIdAndStatusAndStartAfterOrderByStartAsc(
+                    .findFirstByItem_IdAndStatusAndStartAfterOrderByStartAsc(
                             item.getId(),
                             BookingStatus.APPROVED,
                             LocalDateTime.now()
-                    ).orElse(null);
+                    )
+                    .orElse(null);
         }
 
-        ItemShortDto shortDto = ItemMapper.toItemShortDto(item, lastBooking, nextBooking);
-
         ItemDto dto = ItemMapper.toItemDto(item);
-        dto.setLastBooking(shortDto.getLastBooking());
-        dto.setNextBooking(shortDto.getNextBooking());
-        dto.setComments(shortDto.getComments());
+
+        dto.setLastBooking(lastBooking != null ? BookingMapper.toBookingDto(lastBooking) : null);
+        dto.setNextBooking(nextBooking != null ? BookingMapper.toBookingDto(nextBooking) : null);
+
+        if (dto.getComments() == null) {
+            dto.setComments(List.of());
+        }
 
         return dto;
     }
