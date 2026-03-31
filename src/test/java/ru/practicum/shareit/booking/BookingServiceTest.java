@@ -129,7 +129,7 @@ class BookingServiceTest {
     void getAllByUser_shouldReturnBookings() {
 
         when(userService.getUserById(1L)).thenReturn(bookerDto());
-        when(bookingRepository.findByBooker_Id(1L))
+        when(bookingRepository.findByBooker_IdOrderByStartDesc(1L))
                 .thenReturn(List.of(bookingEntity(), bookingEntity()));
 
         List<BookingDto> bookings = bookingService.getAllByUser(1L, BookingState.ALL);

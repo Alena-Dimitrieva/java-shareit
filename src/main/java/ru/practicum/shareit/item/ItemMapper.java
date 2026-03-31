@@ -3,8 +3,8 @@ package ru.practicum.shareit.item;
 import ru.practicum.shareit.booking.Booking;
 import ru.practicum.shareit.booking.BookingMapper;
 import ru.practicum.shareit.booking.dto.ItemShortDto;
+import ru.practicum.shareit.comment.CommentMapper;
 import ru.practicum.shareit.comment.dto.CommentDto;
-import ru.practicum.shareit.comment.model.Comment;
 import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.item.model.Item;
 
@@ -18,7 +18,7 @@ public class ItemMapper {
 
         List<CommentDto> comments = item.getComments() != null
                 ? item.getComments().stream()
-                .map(ItemMapper::toCommentDto)
+                .map(CommentMapper::toCommentDto)
                 .collect(Collectors.toList())
                 : List.of();
 
@@ -50,23 +50,12 @@ public class ItemMapper {
         return item;
     }
 
-    public static CommentDto toCommentDto(Comment comment) {
-        if (comment == null) return null;
-
-        return new CommentDto(
-                comment.getId(),
-                comment.getText(),
-                comment.getAuthor() != null ? comment.getAuthor().getName() : "Unknown",
-                comment.getCreated()
-        );
-    }
-
     public static ItemShortDto toItemShortDto(Item item, Booking lastBooking, Booking nextBooking) {
         if (item == null) return null;
 
         List<CommentDto> comments = item.getComments() != null
                 ? item.getComments().stream()
-                .map(ItemMapper::toCommentDto)
+                .map(CommentMapper::toCommentDto)
                 .collect(Collectors.toList())
                 : List.of();
 

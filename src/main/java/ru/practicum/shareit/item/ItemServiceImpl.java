@@ -7,7 +7,6 @@ import ru.practicum.shareit.booking.Booking;
 import ru.practicum.shareit.booking.BookingMapper;
 import ru.practicum.shareit.booking.BookingRepository;
 import ru.practicum.shareit.booking.BookingStatus;
-import ru.practicum.shareit.booking.dto.ItemShortDto;
 import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.user.User;
@@ -88,7 +87,7 @@ public class ItemServiceImpl implements ItemService {
                 .orElseThrow(() -> new NoSuchElementException("Пользователь не найден"));
 
         return itemRepository.findByOwnerId(ownerId).stream()
-                .map(item -> mapToDtoWithBookings(item, ownerId)) // 👈 важно
+                .map(item -> mapToDtoWithBookings(item, ownerId))
                 .collect(Collectors.toList());
     }
 
