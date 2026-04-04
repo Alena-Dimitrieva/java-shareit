@@ -29,9 +29,21 @@ public class GlobalExceptionHandler {
         return Map.of("error", e.getMessage());
     }
 
+    @ExceptionHandler(BookingValidationException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public Map<String, String> handleBookingValidation(BookingValidationException e) {
+        return Map.of("error", e.getMessage());
+    }
+
     @ExceptionHandler(ForbiddenOperationException.class)
     @ResponseStatus(HttpStatus.FORBIDDEN)
     public Map<String, String> handleForbidden(ForbiddenOperationException e) {
+        return Map.of("error", e.getMessage());
+    }
+
+    @ExceptionHandler(NotFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public Map<String, String> handleNotFoundCustom(NotFoundException e) {
         return Map.of("error", e.getMessage());
     }
 }

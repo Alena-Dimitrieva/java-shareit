@@ -1,16 +1,20 @@
 package ru.practicum.shareit.item;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import ru.practicum.shareit.Exception.ForbiddenOperationException;
+import ru.practicum.shareit.booking.BookingRepository;
 import ru.practicum.shareit.item.dto.ItemDto;
-import ru.practicum.shareit.user.UserService;
-import ru.practicum.shareit.user.dto.UserDto;
+import ru.practicum.shareit.item.model.Item;
+import ru.practicum.shareit.user.User;
+import ru.practicum.shareit.user.UserRepository;
 
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -18,71 +22,107 @@ import static org.mockito.Mockito.*;
 class ItemServiceTest {
 
     @Mock
-    private UserService userService;
+    private UserRepository userRepository;
+
+    @Mock
+    private ItemRepository itemRepository;
+
+    @Mock
+    private BookingRepository bookingRepository;
 
     private ItemServiceImpl itemService;
 
+    private AutoCloseable closeable;
+
     @BeforeEach
     void setUp() {
-        MockitoAnnotations.openMocks(this);
-        itemService = new ItemServiceImpl(userService);
+        closeable = MockitoAnnotations.openMocks(this);
+        itemService = new ItemServiceImpl(userRepository, itemRepository, bookingRepository);
     }
 
-    private UserDto owner() {
-        return new UserDto(1L, "Alice", "alice@mail.com");
+    @AfterEach
+    void tearDown() throws Exception {
+        closeable.close();
     }
 
-    private ItemDto validItem() {
-        return new ItemDto(null, "Drill", "Power drill", true, null);
+    private User owner() {
+        return new User(1L, "Alice", "alice@mail.com");
     }
 
-    //Тесты с позитивным сценарием
+    private Item validItemEntity() {
+        Item item = new Item();
+        item.setId(1L);
+        item.setName("Дрель");
+        item.setDescription("Мощная дрель");
+        item.setAvailable(true);
+        item.setOwner(owner());
+        return item;
+    }
+
+    private ItemDto validItemDto() {
+        ItemDto dto = new ItemDto();
+        dto.setName("Дрель");
+        dto.setDescription("Мощная дрель");
+        dto.setAvailable(true);
+        return dto;
+    }
+    // Позитивные тесты
+
     @Test
     void createItem_shouldCreateItem_whenDataValid() {
 
-        when(userService.getUserById(1L)).thenReturn(owner());
+        when(userRepository.findById(1L)).thenReturn(Optional.of(owner()));
 
-        ItemDto created = itemService.create(validItem(), 1L);
+        when(itemRepository.save(any())).thenAnswer(invocation -> {
+            Item item = invocation.getArgument(0);
+            item.setId(1L);
+            return item;
+        });
+
+        ItemDto created = itemService.create(validItemDto(), 1L);
 
         assertNotNull(created.getId());
-        assertEquals("Drill", created.getName());
+        assertEquals("Дрель", created.getName());
         assertTrue(created.getAvailable());
     }
 
     @Test
     void updateItem_shouldUpdateFields_whenOwnerUpdates() {
 
-        when(userService.getUserById(1L)).thenReturn(owner());
+        Item item = validItemEntity();
 
-        ItemDto created = itemService.create(validItem(), 1L);
+        when(itemRepository.findById(1L)).thenReturn(Optional.of(item));
+        when(itemRepository.save(any())).thenReturn(item);
 
-        ItemDto updateDto = new ItemDto(null, "New Drill", "Updated", false, null);
+        ItemDto updateDto = new ItemDto();
+        updateDto.setName("Новая дрель");
+        updateDto.setDescription("Обновлённая");
+        updateDto.setAvailable(false);
 
-        ItemDto updated = itemService.update(created.getId(), updateDto, 1L);
+        ItemDto updated = itemService.update(1L, updateDto, 1L);
 
-        assertEquals("New Drill", updated.getName());
+        assertEquals("Новая дрель", updated.getName());
         assertFalse(updated.getAvailable());
     }
 
     @Test
     void getItemById_shouldReturnItem() {
 
-        when(userService.getUserById(1L)).thenReturn(owner());
+        when(userRepository.findById(1L)).thenReturn(Optional.of(owner()));
+        when(itemRepository.findById(1L)).thenReturn(Optional.of(validItemEntity()));
 
-        ItemDto created = itemService.create(validItem(), 1L);
+        ItemDto found = itemService.getById(1L, 1L);
 
-        ItemDto found = itemService.getById(created.getId(), 1L);
-
-        assertEquals(created.getId(), found.getId());
+        assertEquals(1L, found.getId());
     }
 
     @Test
     void getAllByOwner_shouldReturnOwnerItems() {
 
-        when(userService.getUserById(1L)).thenReturn(owner());
+        when(userRepository.findById(1L)).thenReturn(Optional.of(owner()));
 
-        itemService.create(validItem(), 1L);
-        itemService.create(validItem(), 1L);
+        when(itemRepository.findByOwnerId(1L))
+                .thenReturn(List.of(validItemEntity(), validItemEntity()));
 
         List<ItemDto> items = itemService.getAllByOwner(1L);
 
@@ -92,22 +132,25 @@ class ItemServiceTest {
     @Test
     void search_shouldReturnMatchingItems() {
 
-        when(userService.getUserById(1L)).thenReturn(owner());
+        when(itemRepository.searchAvailableByText("дрель"))
+                .thenReturn(List.of(validItemEntity()));
 
-        itemService.create(validItem(), 1L);
-
-        List<ItemDto> result = itemService.search("drill");
+        List<ItemDto> result = itemService.search("дрель");
 
         assertEquals(1, result.size());
     }
 
-    //Тесты с негативным сценарием
+    // Негативные тесты
+
     @Test
     void createItem_shouldThrowException_whenAvailableNull() {
 
-        when(userService.getUserById(1L)).thenReturn(owner());
+        when(userRepository.findById(1L)).thenReturn(Optional.of(owner()));
 
-        ItemDto item = new ItemDto(null, "Drill", "Desc", null, null);
+        ItemDto item = new ItemDto();
+        item.setName("Дрель");
+        item.setDescription("Описание");
+        item.setAvailable(null);
 
         assertThrows(IllegalArgumentException.class,
                 () -> itemService.create(item, 1L));
@@ -116,9 +159,12 @@ class ItemServiceTest {
     @Test
     void createItem_shouldThrowException_whenNameEmpty() {
 
-        when(userService.getUserById(1L)).thenReturn(owner());
+        when(userRepository.findById(1L)).thenReturn(Optional.of(owner()));
 
-        ItemDto item = new ItemDto(null, "", "Desc", true, null);
+        ItemDto item = new ItemDto();
+        item.setName("");
+        item.setDescription("Описание");
+        item.setAvailable(true);
 
         assertThrows(IllegalArgumentException.class,
                 () -> itemService.create(item, 1L));
@@ -127,25 +173,28 @@ class ItemServiceTest {
     @Test
     void updateItem_shouldThrowForbidden_whenNotOwner() {
 
-        when(userService.getUserById(1L)).thenReturn(owner());
+        Item item = validItemEntity();
 
-        ItemDto created = itemService.create(validItem(), 1L);
+        when(itemRepository.findById(1L)).thenReturn(Optional.of(item));
 
         assertThrows(ForbiddenOperationException.class,
-                () -> itemService.update(created.getId(), validItem(), 2L));
+                () -> itemService.update(1L, validItemDto(), 2L));
     }
 
     @Test
     void updateItem_shouldThrowException_whenItemNotFound() {
 
+        when(itemRepository.findById(999L)).thenReturn(Optional.empty());
+
         assertThrows(NoSuchElementException.class,
-                () -> itemService.update(999L, validItem(), 1L));
+                () -> itemService.update(999L, validItemDto(), 1L));
     }
 
     @Test
     void getItemById_shouldThrowException_whenItemNotFound() {
 
-        when(userService.getUserById(1L)).thenReturn(owner());
+        when(userRepository.findById(1L)).thenReturn(Optional.of(owner()));
+        when(itemRepository.findById(999L)).thenReturn(Optional.empty());
 
         assertThrows(NoSuchElementException.class,
                 () -> itemService.getById(999L, 1L));

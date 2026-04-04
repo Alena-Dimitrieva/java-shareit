@@ -2,6 +2,8 @@ package ru.practicum.shareit.booking;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
+import ru.practicum.shareit.Exception.BookingValidationException;
+import ru.practicum.shareit.booking.dto.BookingCreateDto;
 import ru.practicum.shareit.booking.dto.BookingDto;
 
 import java.util.List;
@@ -14,9 +16,12 @@ public class BookingController {
     private final BookingService bookingService;
 
     @PostMapping
-    public BookingDto create(@RequestBody BookingDto bookingDto,
+    public BookingDto create(@RequestBody BookingCreateDto bookingCreateDto,
                              @RequestHeader("X-Sharer-User-Id") Long userId) {
-        return bookingService.create(bookingDto, userId);
+        if (bookingCreateDto == null) {
+            throw new BookingValidationException("BookingCreateDto не может быть null");
+        }
+        return bookingService.create(bookingCreateDto, userId);
     }
 
     @PatchMapping("/{bookingId}")
@@ -33,12 +38,14 @@ public class BookingController {
     }
 
     @GetMapping
-    public List<BookingDto> getAllByUser(@RequestHeader("X-Sharer-User-Id") Long userId) {
-        return bookingService.getAllByUser(userId);
+    public List<BookingDto> getAllByUser(@RequestHeader("X-Sharer-User-Id") Long userId,
+                                         @RequestParam(name = "state", defaultValue = "ALL") String stateParam) {
+        return bookingService.getAllByUser(userId, BookingState.from(stateParam));
     }
 
     @GetMapping("/owner")
-    public List<BookingDto> getAllByOwner(@RequestHeader("X-Sharer-User-Id") Long ownerId) {
-        return bookingService.getAllByOwner(ownerId);
+    public List<BookingDto> getAllByOwner(@RequestHeader("X-Sharer-User-Id") Long ownerId,
+                                          @RequestParam(name = "state", defaultValue = "ALL") String stateParam) {
+        return bookingService.getAllByOwner(ownerId, BookingState.from(stateParam));
     }
 }

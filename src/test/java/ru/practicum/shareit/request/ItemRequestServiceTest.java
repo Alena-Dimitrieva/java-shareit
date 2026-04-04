@@ -5,40 +5,51 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import ru.practicum.shareit.request.dto.ItemRequestDto;
-import ru.practicum.shareit.user.UserService;
-import ru.practicum.shareit.user.dto.UserDto;
+import ru.practicum.shareit.request.model.ItemRequest;
+import ru.practicum.shareit.user.User;
+import ru.practicum.shareit.user.UserRepository;
 
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 class ItemRequestServiceTest {
 
     @Mock
-    private UserService userService;
+    private UserRepository userRepository;
+
+    @Mock
+    private ItemRequestRepository requestRepository;
 
     private ItemRequestServiceImpl requestService;
 
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        requestService = new ItemRequestServiceImpl(userService);
+        requestService = new ItemRequestServiceImpl(userRepository, requestRepository);
     }
 
-    private UserDto owner() {
-        return new UserDto(1L, "Alice", "alice@mail.com");
+    private User owner() {
+        return new User(1L, "Alice", "alice@mail.com");
     }
 
     private ItemRequestDto validRequest() {
         return new ItemRequestDto(null, "Нужна дрель", 1L, null);
     }
 
-    //Тесты с позитивным сценарием
+    // Позитивные тесты
     @Test
     void createRequest_shouldCreateRequest_whenDataValid() {
-        when(userService.getUserById(1L)).thenReturn(owner());
+        when(userRepository.findById(1L)).thenReturn(Optional.of(owner()));
+
+        when(requestRepository.save(any())).thenAnswer(invocation -> {
+            ItemRequest req = invocation.getArgument(0);
+            req.setId(1L);
+            return req;
+        });
 
         ItemRequestDto created = requestService.create(validRequest(), 1L);
 
@@ -48,9 +59,15 @@ class ItemRequestServiceTest {
 
     @Test
     void getAllRequests_shouldReturnRequestsFromOtherUsers() {
-        when(userService.getUserById(1L)).thenReturn(owner());
+        User user1 = owner();
+        User user2 = new User(2L, "Bob", "bob@mail.com");
 
-        requestService.create(validRequest(), 1L);
+        ItemRequest req = new ItemRequest();
+        req.setId(1L);
+        req.setDescription("Нужна дрель");
+        req.setRequestor(user1);
+
+        when(requestRepository.findAll()).thenReturn(List.of(req));
 
         List<ItemRequestDto> requests = requestService.getAllRequests(2L);
 
@@ -59,16 +76,19 @@ class ItemRequestServiceTest {
 
     @Test
     void getRequestById_shouldReturnRequest() {
-        when(userService.getUserById(1L)).thenReturn(owner());
+        ItemRequest req = new ItemRequest();
+        req.setId(1L);
+        req.setDescription("Нужна дрель");
+        req.setRequestor(owner());
 
-        ItemRequestDto created = requestService.create(validRequest(), 1L);
+        when(requestRepository.findById(1L)).thenReturn(Optional.of(req));
 
-        ItemRequestDto found = requestService.getRequestById(created.getId(), 1L);
+        ItemRequestDto found = requestService.getRequestById(1L, 1L);
 
-        assertEquals(created.getId(), found.getId());
+        assertEquals(1L, found.getId());
     }
 
-    //Тесты с негативным сценарием
+    // Негативные тесты
     @Test
     void createRequest_shouldThrowException_whenDescriptionEmpty() {
         ItemRequestDto request = new ItemRequestDto(null, "", 1L, null);
@@ -79,6 +99,8 @@ class ItemRequestServiceTest {
 
     @Test
     void getRequestById_shouldThrowException_whenRequestNotFound() {
+        when(requestRepository.findById(999L)).thenReturn(Optional.empty());
+
         assertThrows(NoSuchElementException.class,
                 () -> requestService.getRequestById(999L, 1L));
     }

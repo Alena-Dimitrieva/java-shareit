@@ -1,28 +1,51 @@
 package ru.practicum.shareit.booking;
 
-import ru.practicum.shareit.booking.dto.BookingDto;
+import ru.practicum.shareit.booking.dto.*;
+import ru.practicum.shareit.item.model.Item;
+import ru.practicum.shareit.user.User;
 
 public class BookingMapper {
 
     public static BookingDto toBookingDto(Booking booking) {
-        return new BookingDto(
-                booking.getId(),
-                booking.getStart(),
-                booking.getEnd(),
-                booking.getItem().getId(),
-                booking.getBooker().getId(),
-                booking.getStatus() != null ? booking.getStatus().name() : null
-        );
+        if (booking == null) return null;
+
+        BookingDto dto = new BookingDto();
+        dto.setId(booking.getId());
+        dto.setStart(booking.getStart());
+        dto.setEnd(booking.getEnd());
+
+        if (booking.getItem() != null) {
+            ItemShortDto itemDto = new ItemShortDto(
+                    booking.getItem().getId(),
+                    booking.getItem().getName(),
+                    null,
+                    null,
+                    null
+            );
+            dto.setItem(itemDto);
+        }
+
+        if (booking.getBooker() != null) {
+            UserShortDto userDto = new UserShortDto();
+            userDto.setId(booking.getBooker().getId());
+            dto.setBooker(userDto);
+        }
+
+        dto.setStatus(booking.getStatus().name());
+
+        return dto;
     }
 
-    public static Booking toBooking(BookingDto dto) {
+    public static Booking toBooking(BookingCreateDto dto, Item item, User booker) {
+        if (dto == null) return null;
+
         Booking booking = new Booking();
-        booking.setId(dto.getId());
         booking.setStart(dto.getStart());
         booking.setEnd(dto.getEnd());
-        if (dto.getStatus() != null) {
-            booking.setStatus(BookingStatus.valueOf(dto.getStatus()));
-        }
+        booking.setItem(item);
+        booking.setBooker(booker);
+        booking.setStatus(BookingStatus.WAITING);
+
         return booking;
     }
 }
