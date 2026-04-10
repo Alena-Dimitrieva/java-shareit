@@ -18,8 +18,8 @@
 	<packaging>pom</packaging>
 
 	<modules>
-		<module>shareIt-server</module>
-		<module>shareIt-gateway</module>
+		<module>server</module>
+		<module>gateway</module>
 	</modules>
 
 	<properties>
@@ -36,12 +36,5 @@
 			</plugins>
 		</pluginManagement>
 	</build>
-
-	<profiles>
-		<profile>
-			<id>check</id>
-			<!-- пустой профиль, только чтобы удовлетворить enforcer -->
-		</profile>
-	</profiles>
 
 </project>
