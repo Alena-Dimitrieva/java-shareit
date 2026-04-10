@@ -1,11 +1,12 @@
 package ru.practicum.shareit.request;
 
+import ru.practicum.shareit.comment.dto.CommentDto;
+import ru.practicum.shareit.comment.model.Comment;
 import ru.practicum.shareit.item.dto.ItemForRequestDto;
 import ru.practicum.shareit.item.model.Item;
-import ru.practicum.shareit.comment.model.Comment;
-import ru.practicum.shareit.comment.dto.CommentDto;
 import ru.practicum.shareit.request.dto.ItemRequestDto;
 import ru.practicum.shareit.request.model.ItemRequest;
+
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
