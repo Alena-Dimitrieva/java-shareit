@@ -46,9 +46,9 @@ public class GlobalExceptionHandler {
         return Map.of("error", e.getMessage());
     }
 
-    @ExceptionHandler(Throwable.class)
+    @ExceptionHandler(Exception.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-    public Map<String, String> handleOther(Throwable e) {
+    public Map<String, String> handleOther(Exception e) {
         return Map.of("error", "Internal server error");
     }
 }

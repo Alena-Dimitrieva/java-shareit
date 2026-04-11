@@ -14,7 +14,6 @@ import ru.practicum.shareit.user.User;
 import ru.practicum.shareit.user.UserRepository;
 
 import java.time.LocalDateTime;
-import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -81,8 +80,7 @@ public class ItemRequestServiceImpl implements ItemRequestService {
     }
 
     private ItemRequestDto mapRequestWithItems(ItemRequest request) {
-        List<Item> items = itemRepository.findByRequestId(request.getId());
-        items.sort(Comparator.comparing(Item::getId));
+        List<Item> items = itemRepository.findByRequestIdOrderByIdAsc(request.getId());
         return ItemRequestMapper.toDto(request, items);
     }
 }

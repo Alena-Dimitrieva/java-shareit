@@ -80,7 +80,7 @@ class ItemRequestServiceTest {
         when(userRepository.findById(1L)).thenReturn(Optional.of(requestor()));
         when(requestRepository.findByRequestorIdOrderByCreatedDesc(1L))
                 .thenReturn(List.of(request));
-        when(itemRepository.findByRequestId(anyLong())).thenReturn(new ArrayList<>());
+        when(itemRepository.findByRequestIdOrderByIdAsc(anyLong())).thenReturn(new ArrayList<>());
 
         List<ItemRequestDto> requests = requestService.getOwnRequests(1L);
 
@@ -96,7 +96,7 @@ class ItemRequestServiceTest {
         when(userRepository.findById(2L)).thenReturn(Optional.of(otherUser));
         when(requestRepository.findAllOtherUsersRequests(eq(2L), any()))
                 .thenReturn(List.of(request));
-        when(itemRepository.findByRequestId(anyLong())).thenReturn(new ArrayList<>());
+        when(itemRepository.findByRequestIdOrderByIdAsc(anyLong())).thenReturn(new ArrayList<>());
 
         List<ItemRequestDto> requests = requestService.getAllRequests(2L, 0, 20);
 
@@ -109,7 +109,7 @@ class ItemRequestServiceTest {
 
         when(userRepository.findById(1L)).thenReturn(Optional.of(requestor()));
         when(requestRepository.findById(1L)).thenReturn(Optional.of(request));
-        when(itemRepository.findByRequestId(anyLong())).thenReturn(new ArrayList<>());
+        when(itemRepository.findByRequestIdOrderByIdAsc(anyLong())).thenReturn(new ArrayList<>());
 
         ItemRequestDto found = requestService.getRequestById(1L, 1L);
 
@@ -131,7 +131,7 @@ class ItemRequestServiceTest {
         when(requestRepository.findById(1L)).thenReturn(Optional.of(request));
         List<Item> items = new ArrayList<>();
         items.add(item);
-        when(itemRepository.findByRequestId(1L)).thenReturn(items);
+        when(itemRepository.findByRequestIdOrderByIdAsc(1L)).thenReturn(items);
 
         ItemRequestDto found = requestService.getRequestById(1L, 1L);
 

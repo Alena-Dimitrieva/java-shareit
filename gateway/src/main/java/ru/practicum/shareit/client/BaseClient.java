@@ -1,22 +1,19 @@
 package ru.practicum.shareit.client;
 
-import org.springframework.http.HttpMethod;
-import org.springframework.http.MediaType;
-import org.springframework.http.RequestEntity;
-import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Component;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.*;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 
-@Component
-public class BaseClient {
+public abstract class BaseClient {
 
     protected final RestTemplate restTemplate;
-    protected final String serverUrl;
+
+    @Value("${shareit-server.url:http://localhost:9090}")
+    protected String serverUrl;
 
     public BaseClient(RestTemplate restTemplate) {
         this.restTemplate = restTemplate;
-        this.serverUrl = System.getenv().getOrDefault("SHAREIT_SERVER_URL", "http://localhost:9090");
     }
 
     private ResponseEntity<Object> execute(RequestEntity<?> request) {
